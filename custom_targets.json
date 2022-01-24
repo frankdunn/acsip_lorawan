@@ -1,5 +1,17 @@
 {
-    "K64F_SX126X": {
-        "inherits": ["K64F"]
+    "ACSIP_S76S": {
+        "inherits": ["MCU_STM32L0"],
+        "extra_labels_add": [
+            "STM32L073xZ"
+        ],
+        "macros_add": [
+            "STM32L073xx"
+        ],
+        "bootloader_supported": false
+        
+        
+        
+            
     }
+    
 }

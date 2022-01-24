@@ -15,13 +15,14 @@
  * limitations under the License.
  */
 #include <stdio.h>
-
+#include <mbed.h>
+#include "TinyGPSplus.h"
 #include "lorawan/LoRaWANInterface.h"
 #include "lorawan/system/lorawan_data_structures.h"
 #include "events/EventQueue.h"
 
 // Application helpers
-#include "DummySensor.h"
+
 #include "trace_helper.h"
 #include "lora_radio_helper.h"
 
@@ -33,10 +34,13 @@ using namespace events;
 uint8_t tx_buffer[30];
 uint8_t rx_buffer[30];
 
+#define GPS_RX                                      PC_11
+#define GPS_TX                                      PC_10
+
 /*
  * Sets up an application dependent transmission timer in ms. Used only when Duty Cycling is off for testing
  */
-#define TX_TIMER                        10000
+#define TX_TIMER                        30000
 
 /**
  * Maximum number of events for the event queue.
@@ -55,11 +59,13 @@ uint8_t rx_buffer[30];
  */
 #define PC_9                            0
 
-/**
- * Dummy sensor class object
- */
-DS1820  ds1820(PC_9);
 
+//DigitalOut blue_led(PC_1);
+DigitalOut GPS_LEVEL_SHIFTER_EN(PC_6);
+DigitalOut GPS_RST(PB_2);
+BufferedSerial gpsPort(GPS_TX, GPS_RX);
+TinyGPSPlus gps;
+bool gps_flag = 0 ;
 /**
 * This event queue is the global event queue for both the
 * application and stack. To conserve memory, the stack is designed to run
@@ -87,6 +93,37 @@ static LoRaWANInterface lorawan(radio);
  */
 static lorawan_app_callbacks_t callbacks;
 
+void gps_start(void){
+    GPS_LEVEL_SHIFTER_EN = 1;
+    GPS_RST = 0;
+    ThisThread::sleep_for(chrono::milliseconds(200));
+    GPS_RST = 1;
+    ThisThread::sleep_for(chrono::milliseconds(100));
+    gpsPort.write("@GSR\r\n",6);
+    ThisThread::sleep_for(chrono::milliseconds(1000));
+}
+
+
+void gps_get_location(void){
+gps_flag = 1;
+char buf[32] = {0};
+    while (gps_flag) {
+        if (uint32_t num = gpsPort.read(buf, sizeof(buf))) {
+            for (int i = 0;i < num;i++){
+           gps.encode(buf[i]);
+          }
+        if(gps.location.isUpdated())  {
+            printf("\n\r");
+            printf("latitude : %f\n\r",gps.location.lat());
+            printf("longitude : %f\n\r",gps.location.lng());
+            printf("altitude : %f km\n\r",gps.altitude.kilometers());
+            printf("sats %d\n\r",gps.satellites.value());
+            printf("hdop %d\n\r",gps.hdop.value());
+            gps_flag = 0;
+            } 
+        }
+    }
+}
 /**
  * Entry point for application
  */
@@ -94,7 +131,8 @@ int main(void)
 {
     // setup tracing
     setup_trace();
-
+    gps_start();
+    gps_get_location();
     // stores the status of a call to LoRaWAN protocol
     lorawan_status_t retcode;
 
@@ -153,22 +191,14 @@ static void send_message()
     uint16_t packet_len;
     int16_t retcode;
     int32_t sensor_value;
+     
+    gps_get_location();
 
-    if (ds1820.begin()) {
-        ds1820.startConversion();
-        sensor_value = ds1820.read();
-        printf("\r\n Dummy Sensor Value = %d \r\n", sensor_value);
-        ds1820.startConversion();
-    } else {
-        printf("\r\n No sensor found \r\n");
-        return;
-    }
-
-    packet_len = sprintf((char *) tx_buffer, "Dummy Sensor Value is %d",
-                         sensor_value);
+    packet_len = sprintf((char *) tx_buffer, "%f %f",gps.location.lat(),gps.location.lng());
 
     retcode = lorawan.send(MBED_CONF_LORA_APP_PORT, tx_buffer, packet_len,
-                           MSG_UNCONFIRMED_FLAG);
+                           //MSG_UNCONFIRMED_FLAG);
+                           MSG_CONFIRMED_FLAG);
 
     if (retcode < 0) {
         retcode == LORAWAN_STATUS_WOULD_BLOCK ? printf("send - WOULD BLOCK\r\n")
@@ -185,6 +215,8 @@ static void send_message()
 
     printf("\r\n %d bytes scheduled for transmission \r\n", retcode);
     memset(tx_buffer, 0, sizeof(tx_buffer));
+    
+    
 }
 
 /**
@@ -208,6 +240,7 @@ static void receive_message()
     printf("\r\n");
     
     memset(rx_buffer, 0, sizeof(rx_buffer));
+    
 }
 
 /**
@@ -266,5 +299,6 @@ static void lora_event_handler(lorawan_event_t event)
             MBED_ASSERT("Unknown Event");
     }
 }
+
 
 // EOF

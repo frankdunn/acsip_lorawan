@@ -4,17 +4,18 @@
     },
     "target_overrides": {
         "*": {
+            "target.printf_lib": "std",
             "platform.stdio-convert-newlines": true,
             "platform.stdio-baud-rate": 115200,
             "platform.default-serial-baud-rate": 115200,
-            "mbed-trace.enable": false,
+            "mbed-trace.enable": true,
             "mbed-trace.max-level": "TRACE_LEVEL_DEBUG",
             "lora.over-the-air-activation": true,
-            "lora.duty-cycle-on": true,
+            "lora.duty-cycle-on": false,
             "lora.phy": "EU868",
-            "lora.device-eui": "{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }",
-            "lora.application-eui": "{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }",
-            "lora.application-key": "{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }"
+            "lora.device-eui": "{ 0x70, 0xB3, 0xD5, 0x7E, 0xD0, 0x04, 0x77, 0x5C }",
+            "lora.application-eui": "{ 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00   }",
+            "lora.application-key": "{ 0x78, 0xBF, 0x03, 0x65, 0xB1, 0x21, 0xDC, 0xDA, 0xB9, 0x7F, 0x58, 0xDC, 0x4E, 0xF5, 0xDB, 0xBF  }"
         },
 
     
@@ -32,6 +33,25 @@
             "SX126X-lora-driver.device-select":  "ARDUINO_UNO_A2",
             "SX126X-lora-driver.crystal-select": "ARDUINO_UNO_A3",
             "SX126X-lora-driver.ant-switch":     "ARDUINO_UNO_D8"
+        },
+          "ACSIP_S76S": {
+             
+            "main_stack_size":     2048,
+            "target.clock_source": "USE_PLL_HSE_XTAL",
+            "target.hse_value" : "24000000",
+            "target.components_add":            ["SX1276"],
+            "sx1276-lora-driver.spi-mosi":       "PB_15",
+            "sx1276-lora-driver.spi-miso":       "PB_14",
+            "sx1276-lora-driver.spi-sclk":       "PB_13",
+            "sx1276-lora-driver.spi-cs":         "PB_12",
+            "sx1276-lora-driver.reset":          "PB_10",
+            "sx1276-lora-driver.dio0":           "PB_11",
+            "sx1276-lora-driver.dio1":           "PC_13",
+            "sx1276-lora-driver.dio2":           "PB_9",
+            "sx1276-lora-driver.dio3":           "PB_4",
+            "sx1276-lora-driver.dio4":           "PB_3",
+            "sx1276-lora-driver.dio5":           "PA_15",
+            "sx1276-lora-driver.ant-switch":     "PA_1"
         }
     },
     "macros": ["MBEDTLS_USER_CONFIG_FILE=\"mbedtls_lora_config.h\""]
